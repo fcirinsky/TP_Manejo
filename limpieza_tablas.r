@@ -1,31 +1,29 @@
+install.packages("countrycode")
 library(tidyverse)
 library(countrycode)
 
-# 1. Cargar datos (asumiendo que los bajaste)
-raw_comtrade <- read_csv("data/comtrade_data.csv")
-raw_voeten <- read_csv("data/Idealpoints.csv")
+# LIMPIAMOS LA BASE DE DATOS DE LOS VOTOS DE AGNUS
+# Cargamos la base
+raw_voeten <- read_csv("Bases Comercio y voto ONU/Idealpointestimates1946-2025.csv")
 
-# 2. Limpiar Comtrade
-comtrade_clean <- raw_comtrade %>%
-  # Pasamos códigos numéricos de ONU a ISO3 (ej: 36 -> AUS)
-  mutate(iso3c = countrycode(reporter_code, origin = "iso3n", destination = "iso3c")) %>%
-  filter(iso3c %in% c("AUS", "CAN", "HUN", "POL", "VNM", "CUB", "EGY", "DZA")) %>%
-  select(year, iso3c, partner_iso3c, trade_value_usd)
+# Nos quedamos con las variables que necesitamos
+voto_clean <- raw_voeten %>%
+  select(ccode, year, IdealPointFP)
 
-# 3. Crear la variable de "Dependencia"
-# Queremos saber cuánto representa el socio (ej China) sobre el total del país
-comercio_final <- comtrade_clean %>%
-  group_by(year, iso3c) %>%
-  summarize(
-    total_trade = sum(trade_value_usd),
-    partner_trade = sum(trade_value_usd[partner_iso3c %in% c("CHN", "USA", "RUS")]),
-    prop_trade = partner_trade / total_trade
-  )
 
-# 4. Limpiar Voeten y unir
-voeten_clean <- raw_voeten %>%
-  mutate(iso3c = countrycode(ccode, origin = "cown", destination = "iso3c")) %>%
-  select(year, iso3c, IdealPointAll)
+voto_clean <- voto_clean %>%
+  mutate(iso3c = countrycode(ccode, 
+                             origin = "cown", 
+                             destination = "iso3c"))
 
-# 5. EL MERGE FINAL
-dataset_tp <- left_join(comercio_final, voeten_clean, by = c("year", "iso3c"))
+# creamos la lista con los países que elegimos
+mis_paises <- c("AUS", "CAN", "HUN", "POL", "VNM", "CUB", "EGY", "DZA")
+
+voto_final <- voto_clean %>%
+  filter(iso3c %in% mis_paises) %>%
+  filter(year >= 1970) # Filtramos desde el caso más antiguo (Egipto)
+
+# Chequeamos que ninguno de los paises tenga NA´s
+voto_final %>%
+  group_by(iso3c) %>%
+  summarize(datos_faltantes = sum(is.na(IdealPointFP)))
