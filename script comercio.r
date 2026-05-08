@@ -5,10 +5,8 @@ library(dplyr)
 library(haven)
 library(tidyr)
 
-voto_onu <- "/MVD/TP Manejo/Bases comercio y voto ONU/Idealpointestimates1946-2025.csv"
-
-expo <- read_csv("Bases comercio y voto ONU/IMF_DOT_TXG_FOB_USD.csv")
-impo <- read_csv("Bases comercio y voto ONU/IMF_DOT_TMG_CIF_USD.csv")
+#expo <- read_csv("Bases comercio y voto ONU/IMF_DOT_TXG_FOB_USD.csv")
+#impo <- read_csv("Bases comercio y voto ONU/IMF_DOT_TMG_CIF_USD.csv")
 
 
 # Limpieza tabla
