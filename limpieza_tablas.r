@@ -29,6 +29,7 @@ voto_final %>%
   summarize(datos_faltantes = sum(is.na(IdealPointFP)))
 
 
+#----------------------------------------------
 #LIMPIAMOS LAS BASES DE DATOS DEL COMERCIO
 
 library(readr)
@@ -115,3 +116,74 @@ dependencia_df <- socios_comercio %>%
   left_join(comercio_total, by = c("codigo", "anio")) %>%
   mutate(dependencia = comercio_bilateral/total) %>%
   select(pais, codigo, socio, anio, comercio_bilateral, total, dependencia)
+
+#----------------------------------------------
+#AHORA UNIMOS LAS TABLAS 
+# Unir comercio con votos
+union_tabla <- dependencia_df %>%
+  left_join(voto_final, by = c("codigo" = "iso3c", "anio" = "year"))
+
+# Primero agregamos las columnas de grupo y hito al panel
+panel <- panel %>%
+  mutate(
+    grupo = case_when(
+      codigo %in% c("AUS", "CAN") ~ "Par 1: Australia-Canadá",
+      codigo %in% c("HUN", "POL") ~ "Par 2: Hungría-Polonia",
+      codigo %in% c("VNM", "CUB") ~ "Par 3: Vietnam-Cuba",
+      codigo %in% c("EGY", "DZA") ~ "Par 4: Egipto-Argelia"
+    ),
+    tratamiento = case_when(
+      codigo %in% c("AUS", "HUN", "VNM", "EGY") ~ "Tratamiento",
+      TRUE ~ "Control"
+    ),
+    hito = case_when(
+      codigo == "AUS" ~ 2001,
+      codigo == "HUN" ~ 2011,
+      codigo == "VNM" ~ 2001,
+      codigo == "EGY" ~ 1974
+    )
+  )
+
+# Un gráfico por país: dependencia (color por socio) e ideal point (negro punteado)
+# Normalizamos para poder ver las dos variables en el mismo eje
+panel_norm <- panel %>%
+  group_by(codigo, socio) %>%
+  mutate(
+    dep_norm = (dependencia - min(dependencia, na.rm = TRUE)) /
+      (max(dependencia, na.rm = TRUE) - min(dependencia, na.rm = TRUE)),
+    ip_norm  = (IdealPointFP - min(IdealPointFP, na.rm = TRUE)) /
+      (max(IdealPointFP, na.rm = TRUE) - min(IdealPointFP, na.rm = TRUE))
+  ) %>%
+  ungroup()
+
+ggplot(panel_norm, aes(x = anio)) +
+  geom_line(aes(y = dep_norm, color = socio), linewidth = 0.9) +
+  geom_line(aes(y = ip_norm), color = "black", linetype = "dashed", linewidth = 0.8) +
+  geom_vline(aes(xintercept = hito), color = "red", linetype = "dotted", linewidth = 0.8) +
+  facet_wrap(~ pais, ncol = 2, scales = "free_x") +
+  labs(
+    title    = "Dependencia comercial e Ideal Point por país",
+    subtitle = "Línea punteada negra = Ideal Point | Línea de color = Dependencia por socio | Línea roja = Hito",
+    x        = "Año",
+    y        = "Valor normalizado (0–1)",
+    color    = "Socio"
+  ) +
+  theme_minimal()
+
+#Ademas hacemos un grafico de tratameinto vs control
+panel %>%
+  filter(!is.na(IdealPointFP)) %>%
+  ggplot(aes(x = anio, y = IdealPointFP, color = pais, linetype = tratamiento)) +
+  geom_line(linewidth = 1) +
+  geom_vline(aes(xintercept = hito), color = "red", linetype = "dotted") +
+  facet_wrap(~ grupo, ncol = 2, scales = "free") +
+  labs(
+    title    = "Ideal Point: Tratamiento vs Control por par",
+    subtitle = "Línea roja punteada = hito comercial",
+    x        = "Año",
+    y        = "Ideal Point (Voeten)",
+    color    = "País",
+    linetype = "Grupo"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
