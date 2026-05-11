@@ -124,7 +124,7 @@ union_tabla <- dependencia_df %>%
   left_join(voto_final, by = c("codigo" = "iso3c", "anio" = "year"))
 
 # Primero agregamos las columnas de grupo y hito al panel
-panel <- panel %>%
+union_tabla <- union_tabla %>%
   mutate(
     grupo = case_when(
       codigo %in% c("AUS", "CAN") ~ "Par 1: Australia-Canadá",
@@ -146,7 +146,7 @@ panel <- panel %>%
 
 # Un gráfico por país: dependencia (color por socio) e ideal point (negro punteado)
 # Normalizamos para poder ver las dos variables en el mismo eje
-panel_norm <- panel %>%
+tabla_norm <- union_tabla %>%
   group_by(codigo, socio) %>%
   mutate(
     dep_norm = (dependencia - min(dependencia, na.rm = TRUE)) /
@@ -154,11 +154,17 @@ panel_norm <- panel %>%
     ip_norm  = (IdealPointFP - min(IdealPointFP, na.rm = TRUE)) /
       (max(IdealPointFP, na.rm = TRUE) - min(IdealPointFP, na.rm = TRUE))
   ) %>%
-  ungroup()
+  ungroup() %>%
+  mutate(pais = factor(pais, levels = c(
+  "Australia", "Canada",      # Par 1
+  "Hungary", "Poland",        # Par 2
+  "Viet Nam", "Cuba",         # Par 3
+  "Egypt, Arab Rep.", "Algeria"  # Par 4
+)))
 
-ggplot(panel_norm, aes(x = anio)) +
+ggplot(tabla_norm, aes(x = anio)) +
   geom_line(aes(y = dep_norm, color = socio), linewidth = 0.9) +
-  geom_line(aes(y = ip_norm), color = "black", linetype = "dashed", linewidth = 0.8) +
+  geom_line(aes(y = ip_norm), color = "black", linetype = "dotted", linewidth = 0.5) +
   geom_vline(aes(xintercept = hito), color = "red", linetype = "dotted", linewidth = 0.8) +
   facet_wrap(~ pais, ncol = 2, scales = "free_x") +
   labs(
@@ -171,7 +177,7 @@ ggplot(panel_norm, aes(x = anio)) +
   theme_minimal()
 
 #Ademas hacemos un grafico de tratameinto vs control
-panel %>%
+union_tabla %>%
   filter(!is.na(IdealPointFP)) %>%
   ggplot(aes(x = anio, y = IdealPointFP, color = pais, linetype = tratamiento)) +
   geom_line(linewidth = 1) +
