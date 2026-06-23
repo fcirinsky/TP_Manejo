@@ -174,7 +174,6 @@ ggplot(union_wide, aes(x = dep_eeuu, y = IdealPointFP)) +
   theme_minimal()
 
 mod_usa <- lm(IdealPointFP ~ dep_eeuu, data = union_wide)
-summary(mod_usa)
 
 # Dependencia general con China
 ggplot(union_wide, aes(x = dep_china, y = IdealPointFP)) +
@@ -186,7 +185,6 @@ ggplot(union_wide, aes(x = dep_china, y = IdealPointFP)) +
   theme_minimal()
 
 mod_china <- lm(IdealPointFP ~ dep_china, data = union_wide)
-summary(mod_china)
 
 # Dependencia general con Rusia
 ggplot(union_wide, aes(x = dep_rusia, y = IdealPointFP)) +
@@ -198,8 +196,9 @@ ggplot(union_wide, aes(x = dep_rusia, y = IdealPointFP)) +
   theme_minimal()
 
 mod_rusia <- lm(IdealPointFP ~ dep_rusia, data = union_wide)
-summary(mod_china)
 
+# Comparación de modelos
+stargazer::stargazer(mod_usa, mod_china, mod_rusia, type = "text")
 
 # Data Frame tratamiento y control con Ideal Point
 resultados_df <- union_wide %>%
