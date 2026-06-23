@@ -116,7 +116,6 @@ dependencia_df <- socios_comercio %>%
   mutate(dependencia = comercio_bilateral/total) %>%
   select(pais, codigo, socio, anio, comercio_bilateral, total, dependencia)
 
-#----------------------------------------------
 #AHORA UNIMOS LAS TABLAS 
 # Unir comercio con votos
 union_tabla <- dependencia_df %>%
@@ -142,7 +141,7 @@ union_tabla <- union_tabla %>%
       codigo == "EGY" ~ 1974))
 
 
-#### PARTE NUEVA ####
+# Corrección de gráficos
 union_wide <- union_tabla %>%
   select(codigo, pais, anio, socio, dependencia,
          IdealPointFP, grupo, tratamiento) %>%
@@ -154,8 +153,7 @@ union_wide <- union_tabla %>%
 #Hito
 hito_df <- tibble(
   codigo = c("AUS", "CAN", "SRB", "ROU", "VNM", "CUB", "EGY", "SYR"),
-  hito = c(2001, 2001, 2013, 2013, 2001, 2001, 1974, 1974)
-)
+  hito = c(2001, 2001, 2013, 2013, 2001, 2001, 1974, 1974))
 
 union_wide <- union_wide %>%
   left_join(hito_df, by = "codigo") %>%
@@ -195,7 +193,7 @@ ggplot(union_wide, aes(x = dep_rusia, y = IdealPointFP)) +
   geom_point(alpha = 0.3) +
   geom_smooth(method = "lm", se = TRUE) +
   labs(title = "Ideal Point en funcion de la dependencia con Rusia",
-       x = "Dependencia comercial con China",
+       x = "Dependencia comercial con Rusia",
        y = "Ideal Point (Voeten)") +
   theme_minimal()
 
@@ -235,7 +233,7 @@ grafico_caso <- ggplot(resultados_df, aes(momento, ip, group = pais,
                      name = NULL) +
   scale_linetype_manual(values = c(Tratamiento = "solid", Control = "dashed"),
                         name = NULL) +
-  scale_x_discrete(expand = expansion(mult = c(0.12, 0.45))) +  # aire para etiquetas
+  scale_x_discrete(expand = expansion(mult = c(0.12, 0.45))) +  
   labs(
     title    = "Ideal Point: promedio 10 años antes vs 10 años después del hito",
     subtitle = "Línea sólida = país tratado | punteada = país control",
@@ -266,7 +264,7 @@ dir_tabla <- resultados_df %>%
   mutate(cambio = despues - antes) %>%                       # cambio de cada país
   select(grupo, tratamiento, cambio) %>%
   pivot_wider(names_from = tratamiento, values_from = cambio) %>%
-  mutate(Efecto = Tratamiento - Control) %>%                    # tratado − control
+  mutate(Efecto = Tratamiento - Control) %>%                    # el efecto es el tratamiento − control
   left_join(direccion, by = "grupo") %>%
   mutate(consistente_con_H1 = if_else(sign(Efecto) == signo_esperado, "Sí", "No")) %>%
   mutate(across(where(is.numeric), ~ round(.x, 3))) %>%
@@ -304,8 +302,7 @@ res_dependencia <- dep_long %>%
 
 res_dependencia %>%
   select(grupo, pais, tratamiento, momento, n_anios) %>%
-  pivot_wider(names_from = momento, values_from = n_anios) %>%
-  print()
+  pivot_wider(names_from = momento, values_from = n_anios)
 
 # Grafico dependencia
 grafico_dep <- ggplot(res_dependencia, aes(momento, dep, group = pais,
@@ -325,7 +322,7 @@ grafico_dep <- ggplot(res_dependencia, aes(momento, dep, group = pais,
   scale_x_discrete(expand = expansion(mult = c(0.12, 0.45))) +
   labs(
     title    = "Dependencia con el socio del shock: 10 años antes vs después del hito",
-    subtitle = "Esperado: el tratado (sólida) SUBE; el control (punteada) queda plano",
+    #subtitle = "Esperado: el tratado (sólida) SUBE; el control (punteada) queda plano",
     x = NULL,
     y = "Dependencia comercial (% del comercio total)"
   ) +
@@ -341,11 +338,11 @@ print(grafico_dep)
 tabla_dep <- res_dependencia %>%
   select(grupo, socio_rel, tratamiento, momento, dep) %>%
   pivot_wider(names_from = momento, values_from = dep) %>%
-  rename(antes = Antes, despues = `Después`) %>%
+  rename(antes = Antes, despues = Después) %>%
   mutate(cambio = despues - antes) %>%
   select(grupo, socio_rel, tratamiento, cambio) %>%
   pivot_wider(names_from = tratamiento, values_from = cambio) %>%
-  mutate(salto_tratado_menos_control = Tratamiento - Control) %>%
+  mutate(dif_trat_control = Tratamiento - Control) %>%
   mutate(across(where(is.numeric), ~ round(.x, 3)))
 
 print(tabla_dep)
@@ -359,10 +356,10 @@ shock_df <- union_wide %>%
 graf_shock <- ggplot(shock_df, aes(a_hitos, IdealPointFP,
                                     color = tratamiento, linetype = tratamiento)) +
   geom_vline(xintercept = 0, color = "#C0392B",
-             linetype = "dashed", linewidth = 0.6) +              # el hito, siempre en 0
+             linetype = "dashed", linewidth = 0.6) +             
   geom_line(linewidth = 0.9) +
   geom_point(size = 1.2, alpha = 0.7) +
-  facet_wrap(~ grupo, ncol = 2, scales = "free_y") +              # x fijo (0 alineado), y libre por par
+  facet_wrap(~ grupo, ncol = 2, scales = "free_y") +             
   scale_color_manual(values = c("Tratamiento" = "#4F94CD",
                                 "Control"     = "#EE5C42"),
                      name = NULL) +
@@ -383,191 +380,5 @@ graf_shock <- ggplot(shock_df, aes(a_hitos, IdealPointFP,
 
 print(graf_shock)
 
-##### TODO LO DE ARRIBA ESTÁ, LO DE ABAJO CREO QUE SE BORRARÍA #####
 
 
-
-df_ip <- union_wide %>%
-  filter(!is.na(IdealPointFP)) %>%
-  mutate(pais = factor(pais, levels = c(
-    "Australia","Canada","Hungary","Poland",
-    "Viet Nam","Cuba","Egypt, Arab Rep.","Algeria")))
-
-ggplot(df_ip, aes(x = anio, y = IdealPointFP, color = periodo)) +
-  geom_point(size = 1.3) +
-  geom_vline(aes(xintercept = hito), color = "red", linetype = "dashed") +
-  facet_wrap(~ pais, ncol = 2) +
-  labs(
-    title    = "Ideal Point a lo largo del tiempo, con el hito marcado",
-    subtitle = "Línea roja = hito | color = antes/después",
-    x = "Año", y = "Ideal Point (Voeten)", color = "Período"
-  ) +
-  theme_minimal()
-
-ggplot(df_ip, aes(x = dep_eeuu, y = IdealPointFP, color = anio)) +
-  geom_point(size = 1.6) +
-  geom_smooth(method = "lm", se = FALSE, color = "grey30", linewidth = 0.8) +
-  scale_color_viridis_c() +
-  facet_wrap(~ pais, ncol = 2, scales = "free_x") +
-  labs(
-    title = "Ideal Point vs dependencia con EE.UU.",
-    subtitle = "Color = año | recta = modelo lineal",
-    x = "Dependencia con EE.UU. (proporción)",
-    y = "Ideal Point (Voeten)", color = "Año"
-  ) +
-  theme_minimal()
-
-
-
-
-union_tabla %>%
-  filter(!is.na(IdealPointFP)) %>%
-  mutate(pais = factor(pais, levels = c(
-    "Australia", "Canada",          # Par 1
-    "Hungary", "Poland",            # Par 2
-    "Viet Nam", "Cuba",             # Par 3
-    "Egypt, Arab Rep.", "Algeria"   # Par 4
-  ))) %>%
-  ggplot(aes(x = dependencia, y = IdealPointFP, color = socio)) +
-  geom_point(alpha = 0.4, size = 1) +
-  geom_smooth(method = "lm", se = FALSE, linewidth = 0.9) +
-  facet_wrap(~ pais, ncol = 2, scales = "free_x") +
-  labs(
-    title    = "Ideal Point en función de la dependencia comercial, por país",
-    subtitle = "Cada recta es un modelo lineal (Ideal Point ~ dependencia) por socio",
-    x        = "Dependencia comercial (proporción del comercio total)",
-    y        = "Ideal Point (Voeten)",
-    color    = "Socio"
-  ) +
-  theme_minimal()
-
-
-
-
-# Relacion segun el hito
-mod_v20 <- lm(IdealPointFP ~ dep_eeuu, data = hito20)
-mod_v10 <- lm(IdealPointFP ~ dep_eeuu, data = hito10)
-summary(mod_v20)
-summary(mod_v10)
-
-ggplot(hito20, aes(x = dep_eeuu, y = IdealPointFP)) +
-  geom_point(alpha = 0.3) +
-  geom_smooth(method = "lm", se = TRUE) +
-  labs(title = "Relacion en ventana de +-20 años alrededor del hito",
-       x = "Dependencia comercial con EE.UU.",
-       y = "Ideal Point (Voeten)") +
-  theme_minimal() ##### RAROOO ####
-
-
-#### TERMINA PARTE NUEVA"
-#### Grafico 1 (correlación general)
-# Dependencia con China
-ggplot(union_wide, aes(x = dep_china, y = IdealPointFP)) +
-  geom_point(alpha = 0.3, size = 1.3) +
-  geom_smooth(method = "lm", se = TRUE, color = "firebrick") +
-  labs(
-    title    = "Ideal Point en funcion de la dependencia con China",
-    subtitle = "Cada punto es un pais-anio | la recta es el modelo lineal",
-    x        = "Dependencia comercial con China (proporcion)",
-    y        = "Ideal Point (Voeten)"
-  ) +
-  theme_minimal()
-
-# Dependencia con EE.UU.
-ggplot(union_wide, aes(x = dep_eeuu, y = IdealPointFP)) +
-  geom_point(alpha = 0.3, size = 1.3) +
-  geom_smooth(method = "lm", se = TRUE, color = "seagreen") +
-  labs(
-    title    = "Ideal Point en funcion de la dependencia con EE.UU.",
-    subtitle = "Cada punto es un pais-anio | la recta es el modelo lineal",
-    x        = "Dependencia comercial con EE.UU. (proporcion)",
-    y        = "Ideal Point (Voeten)"
-  ) +
-  theme_minimal()
-
-# Dependencia con Rusia
-ggplot(union_wide, aes(x = dep_rusia, y = IdealPointFP)) +
-  geom_point(alpha = 0.3, size = 1.3) +
-  geom_smooth(method = "lm", se = TRUE, color = "steelblue") +
-  labs(
-    title    = "Ideal Point en funcion de la dependencia con Rusia",
-    subtitle = "Cada punto es un pais-anio | la recta es el modelo lineal",
-    x        = "Dependencia comercial con Rusia (proporcion)",
-    y        = "Ideal Point (Voeten)"
-  ) +
-  theme_minimal()
-
-summary(lm(IdealPointFP ~ dep_china, data = union_wide))
-summary(lm(IdealPointFP ~ dep_eeuu,  data = union_wide))
-summary(lm(IdealPointFP ~ dep_rusia, data = union_wide))
-
-#Correlacion pero por pais
-union_tabla %>%
-  filter(!is.na(IdealPointFP)) %>%
-  mutate(pais = factor(pais, levels = c(
-    "Australia","Canada","Hungary","Poland",
-    "Viet Nam","Cuba","Egypt, Arab Rep.","Algeria"))) %>%
-  ggplot(aes(x = dependencia, y = IdealPointFP, color = socio)) +
-  geom_point(alpha = 0.4, size = 1) +
-  geom_smooth(method = "lm", se = FALSE, linewidth = 0.9) +
-  facet_wrap(~ pais, ncol = 2, scales = "free_x") +
-  labs(
-    title = "Ideal Point vs dependencia comercial, por pais",
-    x = "Dependencia comercial (proporcion)",
-    y = "Ideal Point (Voeten)", color = "Socio"
-  ) +
-  theme_minimal()
-
-
-
-#######################
-
-# Un gráfico por país: dependencia (color por socio) e ideal point (negro punteado)
-# Normalizamos para poder ver las dos variables en el mismo eje
-#tabla_norm <- union_tabla %>%
-  group_by(codigo, socio) %>%
-  mutate(
-    dep_norm = (dependencia - min(dependencia, na.rm = TRUE)) /
-      (max(dependencia, na.rm = TRUE) - min(dependencia, na.rm = TRUE)),
-    ip_norm  = (IdealPointFP - min(IdealPointFP, na.rm = TRUE)) /
-      (max(IdealPointFP, na.rm = TRUE) - min(IdealPointFP, na.rm = TRUE))
-  ) %>%
-  ungroup() %>%
-  mutate(pais = factor(pais, levels = c(
-  "Australia", "Canada",      # Par 1
-  "Hungary", "Poland",        # Par 2
-  "Viet Nam", "Cuba",         # Par 3
-  "Egypt, Arab Rep.", "Algeria"  # Par 4
-)))
-
-ggplot(tabla_norm, aes(x = anio)) +
-  geom_line(aes(y = dep_norm, color = socio), linewidth = 0.9) +
-  geom_line(aes(y = ip_norm), color = "black", linetype = "dotted", linewidth = 0.5) +
-  geom_vline(aes(xintercept = hito), color = "red", linetype = "dotted", linewidth = 0.8) +
-  facet_wrap(~ pais, ncol = 2, scales = "free_x") +
-  labs(
-    title    = "Dependencia comercial e Ideal Point por país",
-    subtitle = "Línea punteada negra = Ideal Point | Línea de color = Dependencia por socio | Línea roja = Hito",
-    x        = "Año",
-    y        = "Valor normalizado (0–1)",
-    color    = "Socio"
-  ) +
-  theme_minimal()
-
-#Ademas hacemos un grafico de tratameinto vs control
-union_tabla %>%
-  filter(!is.na(IdealPointFP)) %>%
-  ggplot(aes(x = anio, y = IdealPointFP, color = pais, linetype = tratamiento)) +
-  geom_line(linewidth = 1) +
-  geom_vline(aes(xintercept = hito), color = "red", linetype = "dotted") +
-  facet_wrap(~ grupo, ncol = 2, scales = "free") +
-  labs(
-    title    = "Ideal Point: Tratamiento vs Control por par",
-    subtitle = "Línea roja punteada = hito comercial",
-    x        = "Año",
-    y        = "Ideal Point (Voeten)",
-    color    = "País",
-    linetype = "Grupo"
-  ) +
-  theme_minimal() +
-  theme(legend.position = "bottom")
